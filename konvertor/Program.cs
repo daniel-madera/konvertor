@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Data.Odbc;
 using System.IO;
+using System.Text;
 
 namespace konvertor
 {
@@ -15,10 +16,13 @@ namespace konvertor
             {
                 using (SqlConnection sql = new SqlConnection())
                 {
-                    using (StreamWriter log = new StreamWriter(ConfigurationManager.AppSettings["Log"]))
+                    using (StreamWriter log = new StreamWriter(Console.OpenStandardOutput(), Console.OutputEncoding))
                     {
                         try
                         {
+                            log.AutoFlush = true;
+                            Console.SetOut(log);
+
                             checkDbfSettings();
                             checkSqlSettings();
 
@@ -30,7 +34,7 @@ namespace konvertor
 
                             DataConvertor convertor = new DataConvertor(dbf, sql, log, Boolean.Parse(ConfigurationManager.AppSettings["IsTest"]));
                             log.WriteLine("Probíhá konverze dat, prosím čekejte...");
-                            convertor.execute();
+                            convertor.Execute();
                             return 0;
                         }
 

@@ -393,8 +393,7 @@ namespace konvertor
 
                         string sdani = data["_sdani"];
                         bool nahradni = data["_nahradni"] == "1";
-                        DateTime payupDate = new DateTime(date.Year, date.Month, date.Day);
-                        payupDate.AddDays(Int32.Parse(data["_splatnost"]));
+                        DateTime payupDate = date.AddDays(Int32.Parse(data["_splatnost"]));
                         string dateStr = date.ToString("yyyy-MM-dd");
                         string payupDateStr = payupDate.ToString("yyyy-MM-dd");
 
@@ -418,17 +417,11 @@ namespace konvertor
                         if (invoiceExists(id.ToString()))
                         {
                             // update wrong converted data
-                            //using (var command = sql.CreateCommand()) {
-                            //    command.CommandText = "UPDATE FA SET Kc0=@Kc0, Kc1=@Kc1, Kc2=@Kc2,"
-                            //        + "KcDPH1=@KcDPH1, KcDPH2=@KcDPH2, KcZaokr=@KcZaokr, KcCelkem=@KcCelkem WHERE Cislo=@id";
+                            //using (var command = sql.CreateCommand())
+                            //{
+                            //    command.CommandText = "UPDATE FA SET DatSplat=@DatSplat WHERE Cislo=@id";
                             //    command.Parameters.AddWithValue("@id", id);
-                            //    command.Parameters.AddWithValue("@Kc0", commaToDotInDecimalValue(data["Kc0"]));
-                            //    command.Parameters.AddWithValue("@Kc1", commaToDotInDecimalValue(data["Kc1"]));
-                            //    command.Parameters.AddWithValue("@Kc2", commaToDotInDecimalValue(data["Kc2"]));
-                            //    command.Parameters.AddWithValue("@KcDPH1", commaToDotInDecimalValue(data["KcDPH1"]));
-                            //    command.Parameters.AddWithValue("@KcDPH2", commaToDotInDecimalValue(data["KcDPH2"]));
-                            //    command.Parameters.AddWithValue("@KcZaokr", commaToDotInDecimalValue(data["KcZaokr"]));
-                            //    command.Parameters.AddWithValue("@KcCelkem", commaToDotInDecimalValue(data["KcCelkem"]));
+                            //    command.Parameters.AddWithValue("@DatSplat", payupDateStr);
                             //    command.ExecuteNonQuery();
 
                             //}
@@ -604,7 +597,7 @@ namespace konvertor
             }
         }
 
-        public void execute()
+        public void Execute()
         {
             convertCostumers();
             convertSuppliers();
