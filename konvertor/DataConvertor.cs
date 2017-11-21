@@ -39,13 +39,17 @@ namespace konvertor
             }
         }
 
+        private string columnPartner(string type)
+        {
+            return type == "ODB" ? "P2" : "P1";
+        }
+
         private bool partnerExists(string id, string type)
         {
             using (var command = sql.CreateCommand())
             {
-                command.CommandText = "SELECT 1 as result FROM AD WHERE Ost2=@id AND Ost1=@type";
+                command.CommandText = String.Format("SELECT 1 as result FROM AD WHERE Smlouva=@id AND {0}=1", columnPartner(type));
                 command.Parameters.AddWithValue("@id", id);
-                command.Parameters.AddWithValue("@type", type);
                 using (var reader = command.ExecuteReader())
                 {
                     return reader.HasRows;
@@ -99,9 +103,8 @@ namespace konvertor
                 output.AppendFormat("{0}='{1}',", columns[i], values[i]);
             }
             output.Remove(output.Length - 1, 1);
-            sqlCmd.CommandText = String.Format("UPDATE AD SET {0} WHERE Ost1=@type AND Ost2=@id", output);
+            sqlCmd.CommandText = String.Format("UPDATE AD SET {0} WHERE Smlouva=@id AND {1}=1", output, columnPartner(type));
             sqlCmd.Parameters.AddWithValue("@id", values[0]);
-            sqlCmd.Parameters.AddWithValue("@type", type);
             sqlCmd.ExecuteNonQuery();
         }
 
@@ -118,8 +121,9 @@ namespace konvertor
         {
             return String.Format("SELECT {0} {1} FROM {2} ORDER BY CisloOdber",
                 isTest ? "TOP 20" : "",
-                "CisloOdber as Ost2" +
-                ",'ODB' as Ost1" +
+                "CisloOdber as Smlouva" +
+                // "CisloOdber as Ost2" +
+                // ",'ODB' as Ost1" +
                 ",NazevOdber AS Firma" +
                 ",Ulice" +
                 ",Mesto AS Obec" +
@@ -138,8 +142,8 @@ namespace konvertor
                 ",IIF(NahradniPl = 1, 1, 0) AS RefStr" +
                 ",IIF(RabatO <> 0, RabatO * (-1), NULL) AS CenyIDS" +
                 ",IIF(KodSumFa <> '', 2, IIF(SumFa = 1, 1, 0)) AS RefCin" +
-                ",IIF(KupniSmlou = 1, CisloOdber, NULL) AS Smlouva" +
-                ",1 AS P2",
+                ",KupniSmlou AS P3" +
+                ",1 AS P2", // ODB
                 dbfPath + "\\DBFODB.DBF");
         }
 
@@ -212,8 +216,9 @@ namespace konvertor
         {
             return String.Format("SELECT {0} {1} FROM {2} ORDER BY CisloDodav",
                 isTest ? "TOP 20" : "",
-                "CisloDodav AS Ost2" +
-                ",'DOD' AS Ost1" +
+                "CisloDodav AS Smlouva" +
+                // "CisloDodav AS Ost2" +
+                // ",'DOD' AS Ost1" +
                 ",NazevDodav AS Firma" +
                 // ",NazevDodav1 AS Jmeno" + // column name is too long for dbf standards
                 ",Ulice" +
@@ -225,7 +230,7 @@ namespace konvertor
                 ",Telefon AS Tel" +
                 ",Fax" +
                 ",Mail AS Email" +
-                ",1 AS P1",
+                ",1 AS P1", //DOD
                 dbfPath + "\\DBFDOD.DBF");
         }
 
@@ -446,8 +451,8 @@ namespace konvertor
                             {
                                 cmd = sqlCmd.CommandText = "UPDATE FA" +
                                     " SET FA.RefAd=AD.Id" +
-                                    " FROM FA INNER JOIN AD on FA.RefAd=AD.Ost2" +
-                                    " WHERE AD.Ost1='ODB' AND FA.Cislo=@id";
+                                    " FROM FA INNER JOIN AD on FA.RefAd=AD.Smlouva" +
+                                    " WHERE AD.P2=1 AND FA.Cislo=@id"; // P2 priznak znamena, ze je to odberatel
                                 sqlCmd.Parameters.AddWithValue("@id", id);
                                 sqlCmd.ExecuteNonQuery();
                             }
@@ -523,7 +528,7 @@ namespace konvertor
         {
             return String.Format("SELECT {0} {1} FROM {2} WHERE {3}",
                 isTest ? "TOP 20" : "",
-                "REPLICATE('0',5-LEN(AD.Ost2))+AD.Ost2 as CisloOdber" +
+                "REPLICATE('0',5-LEN(AD.Smlouva))+AD.Smlouva as CisloOdber" +
                 ", FA.Firma as NazevOdber" +
                 ", right(FA.Cislo,5)+'/'+format(FA.Datum,'yy') as CisloFakRu" +
                 ", FORMAT(FA.Datum, 'yyyy-MM-dd') as DatFa" +
