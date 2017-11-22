@@ -32,7 +32,7 @@ namespace konvertor
                             sql.ConnectionString = buildSqlConnectionString();
                             sql.Open();
 
-                            DataConvertor convertor = new DataConvertor(dbf, sql, log, Boolean.Parse(ConfigurationManager.AppSettings["IsTest"]));
+                            DataConvertor convertor = new DataConvertor(dbf, sql, log, ConfigurationManager.AppSettings["SheetID"], ConfigurationManager.AppSettings["SheetName"], Boolean.Parse(ConfigurationManager.AppSettings["IsTest"]));
                             log.WriteLine("Probíhá konverze dat, prosím čekejte...");
                             convertor.Execute();
                             return 0;

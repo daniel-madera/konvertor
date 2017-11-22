@@ -5,6 +5,12 @@ using System.Text;
 using System.Data.Odbc;
 using System.Data.SqlClient;
 using System.IO;
+using Google.Apis.Sheets.v4;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4.Data;
+using System.Security.Cryptography.X509Certificates;
+using Google.Apis.Auth.OAuth2;
+using System.Configuration;
 
 namespace konvertor
 {
@@ -14,19 +20,27 @@ namespace konvertor
 
         public static string[] requiredDbfFiles = { "DBFODB.DBF", "DBFDOD.DBF", "DBFPOHL.DBF" };
 
+        private readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
+        
         private OdbcConnection dbf;
         private SqlConnection sql;
         private string dbfPath;
         private Boolean isTest;
         private StreamWriter logStream;
+        private readonly string appName = "ENP";
+        private string sheetId;
+        private string sheetName;
 
-        public DataConvertor(OdbcConnection dbf, SqlConnection sql, StreamWriter logStream, Boolean isTest = false)
+
+        public DataConvertor(OdbcConnection dbf, SqlConnection sql, StreamWriter logStream, string sheetId, string sheetName, Boolean isTest = false)
         {
             this.dbf = dbf;
             this.sql = sql;
             this.isTest = isTest;
             this.logStream = logStream;
-            this.dbfPath = System.Configuration.ConfigurationManager.AppSettings["DbfPath"];
+            this.dbfPath = ConfigurationManager.AppSettings["DbfPath"];
+            this.sheetId = sheetId;
+            this.sheetName = sheetName;
 
             if (dbf.State != System.Data.ConnectionState.Open)
             {
@@ -519,6 +533,22 @@ namespace konvertor
                     }
                 }
 
+                using (var sqlCmd = sql.CreateCommand())
+                {
+                    /**
+                        updates emails in the invoices where partner has NP in shipping address as Utvar2
+                        if partner has in Utvar2 value NP then its email (ADdodaci.Email2) is confirmed as valid email for ENP
+                        if email in the invoice is filled, export to ENP is possible
+                    */
+                    sqlCmd.CommandText = "update FAs" +
+                        " set FAs.Email=ADdodaci.Email2" +
+                        " from FA FAs" +
+                        " join AD on AD.ID=FAs.RefAD" +
+                        " join ADdodaci on ADdodaci.RefAg=AD.ID and ADdodaci.Utvar2='NP'" +
+                        " where FAs.RefStr='1'";
+                    sqlCmd.ExecuteNonQuery();
+                }
+                 
                 Log(String.Format("Zpracováno {0} pohledávek. Vloženo: {1}, přeskočeno: {2}, chybných: {3}",
                     counters[2], counters[1], counters[0], counters[2] - counters[1] - counters[0]));
             }
@@ -602,12 +632,109 @@ namespace konvertor
             }
         }
 
+        private void addNpCostumersToSheet()
+        {
+            try {
+                GoogleCredential credential;
+                using (var stream = new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+                {
+                    credential = GoogleCredential.FromStream(stream)
+                        .CreateScoped(Scopes);
+                }
+
+                // Create Google Sheets API service.
+                SheetsService service = new SheetsService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = appName,
+                });
+
+                var range = $"{sheetName}!A2:A";
+                SpreadsheetsResource.ValuesResource.GetRequest request =
+                        service.Spreadsheets.Values.Get(sheetId, range);
+
+                var response = request.Execute();
+                IList<IList<object>> values = response.Values;
+
+                List<string> ids = new List<string>();
+
+                if (values != null && values.Count > 0)
+                {
+                    Log(String.Format("V spreadsheetu bylo nalezeno {0} odběratelů.", values.Count));
+                    foreach (var row in values)
+                    {
+                        ids.Add(row[0].ToString());
+                    }
+                }
+                else
+                {
+                    Log("Žádná data nebyla v spreadsheetu nalezena.");
+                }
+
+                using (var sqlCmd = sql.CreateCommand())
+                {
+                    sqlCmd.CommandText = getNpCostumersQuery(ids);
+                    using (var reader = sqlCmd.ExecuteReader())
+                    {
+                        int count = 0;
+                        while (reader.Read())
+                        {
+                            range = $"{sheetName}!A2:E";
+                            var valueRange = new ValueRange();
+
+                            var oblist = new List<object>()
+                            {
+                                reader.GetValue(0).ToString(),
+                                reader.GetValue(1).ToString(),
+                                reader.GetValue(2).ToString(),
+                                reader.GetValue(3).ToString(),
+                                reader.GetValue(4).ToString()
+                            };
+                            valueRange.Values = new List<IList<object>> { oblist };
+
+                            try {
+
+                                var appendRequest = service.Spreadsheets.Values.Append(valueRange, sheetId, range);
+                                appendRequest.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+                                var appendReponse = appendRequest.Execute();
+                            }
+                            catch (Exception e) {
+                                Log("Nepodařilo se vložit data do sheetu. " + e.ToString());
+                            }
+                            count++;
+                        }
+
+                        Log(String.Format("Vloženo do spreadsheetu {0} odběratelů.", count));
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                Log("Nepodařilo se spojit s sheetem. " + e.ToString());
+            }
+        }
+
+        private string getNpCostumersQuery(List<string> ids)
+        {
+            return String.Format(
+                "select distinct cast(AD.Smlouva as INTEGER) as CisloOdb, AD.Firma as Firma, AD.Email as Email, AD.Tel as Telefon, ADdodaci.Email2 as EmailNP" +
+                " from AD" +
+                " join FA on AD.ID=FA.RefAD" +
+                " join ADdodaci on ADdodaci.RefAg=AD.ID" +
+                " where FA.RefStr='1'" +
+                (ids.Capacity > 0 ? " and Smlouva not in ({0})" : "") +
+                " order by CisloOdb", 
+                String.Join(",", ids));
+        }
+
         public void Execute()
         {
             convertCostumers();
             convertSuppliers();
             convertInvoices();
             convertUnpaidInvoices();
+            addNpCostumersToSheet();
         }
 
         private void Log(string message) {
