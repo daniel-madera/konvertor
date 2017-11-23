@@ -721,7 +721,7 @@ namespace konvertor
                 "select distinct cast(AD.Smlouva as INTEGER) as CisloOdb, AD.Firma as Firma, AD.Email as Email, AD.Tel as Telefon, ADdodaci.Email2 as EmailNP" +
                 " from AD" +
                 " join FA on AD.ID=FA.RefAD" +
-                " join ADdodaci on ADdodaci.RefAg=AD.ID" +
+                " left join ADdodaci on ADdodaci.RefAg=AD.ID" +
                 " where FA.RefStr='1'" +
                 (ids.Capacity > 0 ? " and Smlouva not in ({0})" : "") +
                 " order by CisloOdb", 
