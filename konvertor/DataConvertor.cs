@@ -679,7 +679,7 @@ namespace konvertor
                         int count = 0;
                         while (reader.Read())
                         {
-                            range = $"{sheetName}!A2:E";
+                            range = $"{sheetName}!A2:F";
                             var valueRange = new ValueRange();
 
                             var oblist = new List<object>()
@@ -688,7 +688,8 @@ namespace konvertor
                                 reader.GetValue(1).ToString(),
                                 reader.GetValue(2).ToString(),
                                 reader.GetValue(3).ToString(),
-                                reader.GetValue(4).ToString()
+                                reader.GetValue(4).ToString(),
+                                reader.GetValue(5).ToString()
                             };
                             valueRange.Values = new List<IList<object>> { oblist };
 
@@ -718,12 +719,12 @@ namespace konvertor
         private string getNpCostumersQuery(List<string> ids)
         {
             return String.Format(
-                "select distinct cast(AD.Smlouva as INTEGER) as CisloOdb, AD.Firma as Firma, AD.Email as Email, AD.Tel as Telefon, ADdodaci.Email2 as EmailNP" +
+                "select distinct cast(AD.Smlouva as INTEGER) as CisloOdb, AD.ICO as ICO, AD.Firma as Firma, AD.Email as Email, AD.Tel as Telefon, ADdodaci.Email2 as EmailNP" +
                 " from AD" +
                 " join FA on AD.ID=FA.RefAD" +
-                " left join ADdodaci on ADdodaci.RefAg=AD.ID" +
+                " left join ADdodaci on ADdodaci.RefAg=AD.ID and ADdodaci.Utvar2='NP'" +
                 " where FA.RefStr='1'" +
-                (ids.Capacity > 0 ? " and Smlouva not in ({0})" : "") +
+                (ids.Capacity > 0 ? " and AD.Smlouva not in ({0})" : "") +
                 " order by CisloOdb", 
                 String.Join(",", ids));
         }
