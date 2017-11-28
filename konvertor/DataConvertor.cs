@@ -544,8 +544,9 @@ namespace konvertor
                         " set FAs.Email=ADdodaci.Email2" +
                         " from FA FAs" +
                         " join AD on AD.ID=FAs.RefAD" +
+                        " join sSTR on FAs.RefStr=sSTR.ID" +
                         " join ADdodaci on ADdodaci.RefAg=AD.ID and ADdodaci.Utvar2='NP'" +
-                        " where FAs.RefStr='1'";
+                        " where sSTR.IDS='NP'";
                     sqlCmd.ExecuteNonQuery();
                 }
                  
@@ -722,8 +723,9 @@ namespace konvertor
                 "select distinct cast(AD.Smlouva as INTEGER) as CisloOdb, AD.ICO as ICO, AD.Firma as Firma, AD.Email as Email, AD.Tel as Telefon, ADdodaci.Email2 as EmailNP" +
                 " from AD" +
                 " join FA on AD.ID=FA.RefAD" +
+                " join sSTR on FA.RefStr=sSTR.ID" +
                 " left join ADdodaci on ADdodaci.RefAg=AD.ID and ADdodaci.Utvar2='NP'" +
-                " where FA.RefStr='1'" +
+                " where sSTR.IDS='NP'" +
                 (ids.Capacity > 0 ? " and AD.Smlouva not in ({0})" : "") +
                 " order by CisloOdb", 
                 String.Join(",", ids));
