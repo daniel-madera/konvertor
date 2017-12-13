@@ -136,9 +136,7 @@ namespace konvertor
             return String.Format("SELECT {0} {1} FROM {2} ORDER BY CisloOdber",
                 isTest ? "TOP 20" : "",
                 "CisloOdber as Smlouva" +
-                // "CisloOdber as Ost2" +
-                // ",'ODB' as Ost1" +
-                ",NazevOdber AS Firma" +
+                ",{FN CONCAT(NazevOdber,' ',NazevOdbe2)} AS Firma" +
                 ",Ulice" +
                 ",Mesto AS Obec" +
                 ",PSC" +
@@ -231,10 +229,7 @@ namespace konvertor
             return String.Format("SELECT {0} {1} FROM {2} ORDER BY CisloDodav",
                 isTest ? "TOP 20" : "",
                 "CisloDodav AS Smlouva" +
-                // "CisloDodav AS Ost2" +
-                // ",'DOD' AS Ost1" +
-                ",NazevDodav AS Firma" +
-                // ",NazevDodav1 AS Jmeno" + // column name is too long for dbf standards
+                ",{FN CONCAT(NazevDodav,' ',NazevDoda2)} AS Firma" +
                 ",Ulice" +
                 ",Mesto AS Obec" +
                 ",PSC" +
