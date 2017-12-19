@@ -96,6 +96,7 @@ namespace konvertor
 
         private string escapeValue(string value)
         {
+            value = value.Trim();
             return value.Replace("'", "''");
         }
 
@@ -136,7 +137,7 @@ namespace konvertor
             return String.Format("SELECT {0} {1} FROM {2} ORDER BY CisloOdber",
                 isTest ? "TOP 20" : "",
                 "CisloOdber as Smlouva" +
-                ",{FN CONCAT(NazevOdber,' ',NazevOdbe2)} AS Firma" +
+                ",IIF(NazevOdb2 <> '', NazevOdber+' '+NazevOdb2, NazevOdber) AS Firma" +
                 ",Ulice" +
                 ",Mesto AS Obec" +
                 ",PSC" +
@@ -229,7 +230,7 @@ namespace konvertor
             return String.Format("SELECT {0} {1} FROM {2} ORDER BY CisloDodav",
                 isTest ? "TOP 20" : "",
                 "CisloDodav AS Smlouva" +
-                ",{FN CONCAT(NazevDodav,' ',NazevDoda2)} AS Firma" +
+                ",IIF(NazevDod2 <> '', NazevDodav+' '+NazevDod2, NazevDodav) AS Firma" +
                 ",Ulice" +
                 ",Mesto AS Obec" +
                 ",PSC" +
