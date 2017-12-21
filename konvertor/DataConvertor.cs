@@ -145,7 +145,7 @@ namespace konvertor
                 ",DIC1 + DIC2 AS DIC" +
                 ",Zastoupeny AS Jmeno" +
                 ",Telefon AS Tel" +
-                ",Mail AS Email" +
+                ",IIF(MailFa <> '', Mail+';'+MailFa, Mail) AS Email" +
                 ",NazevPrije as Firma2" +
                 ",UlicePrije as Ulice2" +
                 ",MestoPrije AS Obec2" +
