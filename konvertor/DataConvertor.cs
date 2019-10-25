@@ -338,7 +338,7 @@ namespace konvertor
                 ",KcCelkem AS KcLikv" +
                 ",IIF(FormaUhrad = 'P', 1, IIF(FormaUhrad = 'H', 2, IIF(FormaUhrad = 'D', 4, 1))) AS RelForUh" +
                 ",IIF(FormaUhrad = 'P', 2, IIF(FormaUhrad = 'H', 1, IIF(FormaUhrad = 'D', 1, 2))) AS RefUcet" +
-                ",1 AS ZaokrFV" +
+                ",0 AS ZaokrFV" +
                 ",IIF(TiskSum <> '0', 1, 0) AS RefCin" +
                 ",KodOdb AS CisloZAK" +
                 ",0 AS RelZpVypDPH",
