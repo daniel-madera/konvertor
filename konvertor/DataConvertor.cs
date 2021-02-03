@@ -325,12 +325,12 @@ namespace konvertor
                 ",Kc0" +
                 ",Kc1" +
                 ",Kc2" +
+                ",KcP" +
                 ",0 AS Kc3" +
                 ",KcDPH1" +
                 ",KcDPH2" +
                 ",0 AS KcDPH3" +
                 ",0 AS KcU" +
-                ",0 AS KcP" +
                 ",0 as KcZaloha" +
                 ",0 AS KcKRZaloha" +
                 ",KcZaokr" +
@@ -454,6 +454,73 @@ namespace konvertor
                                 commaToDotInDecimalValues(values);
                                 cmd = sqlCmd.CommandText = String.Format("INSERT INTO FA ({0}) VALUES ('{1}')",
                                     String.Join(", ", data.Keys), String.Join("', '", values));
+                                sqlCmd.ExecuteNonQuery();
+                                
+                                // prida do polozek 21%, 15%, 0% a 0% s přenes
+                                // automaticky se propíše do přiznání
+                                sqlCmd.CommandText = String.Format(@"INSERT INTO FApol (
+                                    RefAg, Kod,
+                                    SText, OrderFld, PDP,
+                                    DatCreate, DatSave,
+                                    RelSzDPH, RelTpDPH,
+                                    KcJedn, Kc, KcDPH, JCbezDPH, Mnozstvi,
+                                    RefSKz0, RefStr, RefCin, RelTypPolEET, RelPk,
+                                    Sleva, KcKRozd, Prenes, MJKoef,
+                                    Cm, CmJedn, CmDPH, CmKurs, CmMnoz
+                                )
+                                (
+                                    /* 21% DPH */
+                                    SELECT TOP 1
+                                        FA.ID, 'DPH21',
+                                        'Zboží v 21% sazbě DPH', 1, 0,
+                                        FA.DatCreate, FA.DatSave,
+                                        2, sDPH.ID,
+                                        FA.Kc2, FA.Kc2, FA.KcDPH2, FA.Kc2, 1,
+                                        0, 0, 0, 0, 0,
+                                        0, 0, 0, 1,
+                                        0, 0, 0, 0, 0
+                                    FROM FA INNER JOIN sDPH ON sDPH.IDS = 'UD' 
+                                    WHERE FA.Cislo = '{0}' AND FA.Kc2 > 0
+                                    UNION ALL
+                                    /* 15% DPH */
+                                    SELECT TOP 1
+                                        FA.ID, 'DPH15',
+                                        'Zboží v 15% sazbě DPH', 2, 0,
+                                        FA.DatCreate, FA.DatSave,
+                                        1, sDPH.ID,
+                                        FA.Kc1, FA.Kc1, FA.KcDPH1, FA.Kc1, 1,
+                                        0, 0, 0, 0, 0,
+                                        0, 0, 0, 1,
+                                        0, 0, 0, 0, 0
+                                    FROM FA INNER JOIN sDPH ON sDPH.IDS = 'UD' 
+                                    WHERE FA.Cislo = '{0}' AND FA.Kc1 > 0
+                                    UNION ALL
+                                    /* 0% DPH */
+                                    SELECT TOP 1
+                                        FA.ID, 'DPH0',
+                                        'Zboží osvobozené od DPH', 3, 0,
+                                        FA.DatCreate, FA.DatSave,
+                                        0, sDPH.ID,
+                                        FA.Kc0, FA.Kc0, 0, FA.Kc0, 1,
+                                        0, 0, 0, 0, 0,
+                                        0, 0, 0, 1,
+                                        0, 0, 0, 0, 0
+                                    FROM FA INNER JOIN sDPH ON sDPH.IDS = 'UNost' 
+                                    WHERE FA.Cislo = '{0}' AND FA.Kc0 > 0
+                                    UNION ALL
+                                    /* 0% DPH prenesena danova povinnost */
+                                    SELECT TOP 1
+                                        FA.ID, 'DPH0P',
+                                        'Zboží v přenesené daňové povinnosti', 4, 1,
+                                        FA.DatCreate, FA.DatSave,
+                                        0, sDPH.ID,
+                                        FA.KcP, FA.KcP, 0, FA.KcP, 1,
+                                        0, 0, 0, 0, 0,
+                                        0, 0, 0, 1,
+                                        0, 0, 0, 0, 0
+                                    FROM FA INNER JOIN sDPH ON sDPH.IDS = 'UDpdp' 
+                                    WHERE FA.Cislo = '{0}' AND FA.KcP > 0
+                                )", id);
                                 sqlCmd.ExecuteNonQuery();
                             }
 
@@ -729,8 +796,8 @@ namespace konvertor
 
         public void Execute()
         {
-            convertCostumers();
-            convertSuppliers();
+            /*convertCostumers();
+            convertSuppliers();*/
             convertInvoices();
             convertUnpaidInvoices();
             addNpCostumersToSheet();
