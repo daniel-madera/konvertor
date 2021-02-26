@@ -796,8 +796,8 @@ namespace konvertor
 
         public void Execute()
         {
-            /*convertCostumers();
-            convertSuppliers();*/
+            convertCostumers();
+            convertSuppliers();
             convertInvoices();
             convertUnpaidInvoices();
             addNpCostumersToSheet();
